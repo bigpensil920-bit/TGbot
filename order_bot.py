@@ -1,5 +1,6 @@
 import logging
 import os
+import json
 from telegram import Update, ReplyKeyboardMarkup, ReplyKeyboardRemove
 from telegram.ext import (
     Application,
@@ -18,6 +19,9 @@ CHANNEL_ID = os.environ.get("CHANNEL_ID", "@ваш_канал")
 READY_CHANNEL_ID = os.environ.get("READY_CHANNEL_ID", "@канал_руководителей")
 # ========================
 
+COUNTER_FILE = "counter.json"
+START_NUMBER = 2233
+
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     level=logging.INFO
@@ -26,8 +30,23 @@ logging.basicConfig(
 # Шаги диалога
 ПЛОЩАДКА, ИМЯ, СТЕЙДЖ, ГОРОД, ДАТА_РОЖДЕНИЯ, РУК, МЕДИА = range(7)
 
-# Тестовые ники руководителей
-РУКОВОДИТЕЛИ = ["@alex_test", "@maria_test", "@john_test", "@olga_test", "@dmitry_test"]
+# Ники руководителей
+РУКОВОДИТЕЛИ = ["@antrakt199404", "@EvgeniyGrecu", "@ksueliseevaa", "@sonya_petrovaTL", "@elbthhh"]
+
+
+def get_next_number() -> int:
+    """Читает текущий номер из файла, увеличивает на 1 и сохраняет."""
+    if os.path.exists(COUNTER_FILE):
+        with open(COUNTER_FILE, "r") as f:
+            data = json.load(f)
+            number = data.get("counter", START_NUMBER - 1) + 1
+    else:
+        number = START_NUMBER
+
+    with open(COUNTER_FILE, "w") as f:
+        json.dump({"counter": number}, f)
+
+    return number
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
@@ -100,13 +119,16 @@ async def get_рук(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 
 async def get_медиа(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     d = context.user_data
+
+    # Получаем следующий номер заказа
+    номер = get_next_number()
+
     строка = (
-        f"{d['площадка']} // {d['имя']} // {d['стейдж']} // "
+        f"{d['площадка']} {номер} // {d['имя']} // {d['стейдж']} // "
         f"{d['город']} // {d['дата']} // {d['рук']}"
     )
 
     try:
-        # Если прислали фото — отправляем фото с подписью-строкой
         if update.message.photo:
             photo_id = update.message.photo[-1].file_id
             await context.bot.send_photo(
@@ -114,7 +136,6 @@ async def get_медиа(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                 photo=photo_id,
                 caption=строка
             )
-        # Если прислали текст (ссылку) — отправляем строку + ссылку
         elif update.message.text:
             ссылка = update.message.text.strip()
             await context.bot.send_message(
@@ -128,7 +149,7 @@ async def get_медиа(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             return МЕДИА
 
         await update.message.reply_text(
-            "✅ Заказ успешно отправлен!\n\nЧтобы оформить новый — напиши /start"
+            f"✅ Заказ №{номер} успешно отправлен!\n\nЧтобы оформить новый — напиши /start"
         )
     except Exception as e:
         logging.error(f"Ошибка отправки в канал: {e}")
@@ -138,10 +159,6 @@ async def get_медиа(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
 
 async def handle_channel_reply(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """
-    Следит за ответами в канале с заказами.
-    Формат: 'готово' или 'не выполнено <причина>'
-    """
     message = update.channel_post
     if not message or not message.reply_to_message:
         return
@@ -149,23 +166,18 @@ async def handle_channel_reply(update: Update, context: ContextTypes.DEFAULT_TYP
     text = message.text.strip() if message.text else ""
     text_lower = text.lower()
 
-    # Берём текст оригинального сообщения (строка заказа)
     original = message.reply_to_message.text or message.reply_to_message.caption
     if not original:
         return
 
-    # Первая строка оригинала — это строка заказа (на случай если там была ссылка)
     строка_заказа = original.split("\n")[0].strip()
 
     try:
-        # ГОТОВО
         if text_lower == "готово":
             await context.bot.send_message(
                 chat_id=READY_CHANNEL_ID,
                 text=f"✅ Готово: {строка_заказа}"
             )
-
-        # НЕ ВЫПОЛНЕНО <причина>
         elif text_lower.startswith("не выполнено"):
             причина = text[len("не выполнено"):].strip()
             if not причина:
@@ -174,7 +186,6 @@ async def handle_channel_reply(update: Update, context: ContextTypes.DEFAULT_TYP
                 chat_id=READY_CHANNEL_ID,
                 text=f"❌ Не выполнено: {строка_заказа} | Причина: {причина}"
             )
-
     except Exception as e:
         logging.error(f"Ошибка отправки в канал руководителей: {e}")
 
@@ -205,8 +216,6 @@ def main():
     )
 
     app.add_handler(conv_handler)
-
-    # Обработчик ответов в канале с заказами
     app.add_handler(MessageHandler(filters.ChatType.CHANNEL & filters.TEXT, handle_channel_reply))
 
     print("🤖 Бот запущен. Нажми Ctrl+C для остановки.")
