@@ -1,0 +1,38 @@
+name: Bot Schedule
+
+on:
+  schedule:
+    - cron: '0 7 * * *'
+    - cron: '0 18 * * *'
+
+jobs:
+  manage_bot:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Определить действие
+        id: action
+        run: |
+          HOUR=$(date -u +%H)
+          if [ "$HOUR" = "07" ]; then
+            echo "action=start" >> $GITHUB_OUTPUT
+          else
+            echo "action=stop" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Включить бота
+        if: steps.action.outputs.action == 'start'
+        run: |
+          curl -X POST \
+            -H "Authorization: Bearer ${{ secrets.RAILWAY_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d '{"query": "mutation { serviceInstanceRedeploy(environmentId: \"${{ secrets.RAILWAY_ENV_ID }}\", serviceId: \"${{ secrets.RAILWAY_SERVICE_ID }}\") }"}' \
+            https://backboard.railway.app/graphql/v2
+
+      - name: Выключить бота
+        if: steps.action.outputs.action == 'stop'
+        run: |
+          curl -X POST \
+            -H "Authorization: Bearer ${{ secrets.RAILWAY_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d '{"query": "mutation { serviceInstanceUpdate(environmentId: \"${{ secrets.RAILWAY_ENV_ID }}\", serviceId: \"${{ secrets.RAILWAY_SERVICE_ID }}\", input: { numReplicas: 0 }) }"}' \
+            https://backboard.railway.app/graphql/v2
