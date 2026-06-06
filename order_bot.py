@@ -35,13 +35,13 @@ logging.basicConfig(
 
 
 def get_next_number() -> int:
-    """Читает текущий номер из файла, увеличивает на 1 и сохраняет."""
+    start = int(os.environ.get("START_COUNTER", "2233"))
     if os.path.exists(COUNTER_FILE):
         with open(COUNTER_FILE, "r") as f:
             data = json.load(f)
-            number = data.get("counter", START_NUMBER - 1) + 1
+            number = max(data.get("counter", start - 1), start - 1) + 1
     else:
-        number = START_NUMBER
+        number = start
 
     with open(COUNTER_FILE, "w") as f:
         json.dump({"counter": number}, f)
