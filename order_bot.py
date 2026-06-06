@@ -31,7 +31,7 @@ logging.basicConfig(
 ПЛОЩАДКА, ИМЯ, СТЕЙДЖ, ГОРОД, ДАТА_РОЖДЕНИЯ, РУК, МЕДИА = range(7)
 
 # Ники руководителей
-РУКОВОДИТЕЛИ = ["@antrakt199404", "@EvgeniyGrecu", "@ksueliseevaa", "@sonya_petrovaTL", "@elbthhh"]
+РУКОВОДИТЕЛИ = ["@antrakt199404", "@EvgeniyGrecu", "@sonya_petrovaTL", "@Skorrrrik", "@Layt_qp", "@Tipple_1843"]
 
 
 def get_next_number() -> int:
@@ -89,7 +89,7 @@ async def get_город(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
 async def get_дата(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     context.user_data["дата"] = update.message.text.strip()
-    keyboard = [[ник] for ник in РУКОВОДИТЕЛИ]
+    keyboard = [РУКОВОДИТЕЛИ[i:i+2] for i in range(0, len(РУКОВОДИТЕЛИ), 2)]
     await update.message.reply_text(
         "Шаг 6/7 — Выбери *ник руководителя*:",
         parse_mode="Markdown",
