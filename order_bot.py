@@ -31,7 +31,7 @@ logging.basicConfig(
 ПЛОЩАДКА, ИМЯ, СТЕЙДЖ, ГОРОД, ДАТА_РОЖДЕНИЯ, РУК, МЕДИА = range(7)
 
 # Ники руководителей
-РУКОВОДИТЕЛИ = ["@antrakt199404", "@EvgeniyGrecu", "@sonya_petrovaTL", "@Skorrrrik", "@Layt_qp", "@Tipple_1843"]
+РУКОВОДИТЕЛИ = ["@antrakt199404", "@EvgeniyGrecu", "@sonya_petrovaTL", "@Skorrrrik", "@Layt_qp", "@Tipple_1843", "@Simbaofficial01"]
 
 
 def get_next_number() -> int:
@@ -53,7 +53,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     await update.message.reply_text(
         "👋 Привет! Давай оформим заказ.\n\n"
         "Шаг 1/7 — Напиши *площадку* на английском языке:\n"
-        "(например: Avito, Instagram, TikTok)",
+        "(например: Mamba, TopFace, TikTok)",
         parse_mode="Markdown",
         reply_markup=ReplyKeyboardRemove()
     )
